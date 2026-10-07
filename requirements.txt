@@ -1,4 +1,0 @@
-alpaca-trade-api==3.0.2
-pytz
-requests
-flask
