@@ -1,4 +1,6 @@
+flask
+yfinance
+pandas
 alpaca-py
-Flask==3.0.0
-pytz
-requests
+sseclient-py
+websockets
