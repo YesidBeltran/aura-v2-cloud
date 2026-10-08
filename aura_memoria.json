@@ -1,0 +1,80 @@
+{
+  "trades": [
+    {
+      "fecha": "2026-10-07T20:00:00",
+      "simbolo": "TSLA",
+      "lado": "COMPRAR",
+      "precio": 377.5,
+      "rsi": 29.7,
+      "cash_antes": 85076,
+      "motivo": "RSI 29.7 sobreventa -> COMPRAR FUERTE"
+    },
+    {
+      "fecha": "2026-10-07T20:15:00",
+      "simbolo": "NVDA",
+      "lado": "COMPRAR",
+      "precio": 420.2,
+      "rsi": 31.2,
+      "cash_antes": 84600,
+      "motivo": "RSI 31.2 sobreventa -> COMPRAR"
+    },
+    {
+      "fecha": "2026-10-07T20:20:00",
+      "simbolo": "AAPL",
+      "lado": "VENDER",
+      "precio": 245.8,
+      "rsi": 68.5,
+      "cash_antes": 84200,
+      "motivo": "RSI 68.5 sobrecompra -> VENDER"
+    },
+    {
+      "fecha": "2026-10-07T20:25:00",
+      "simbolo": "MSFT",
+      "lado": "VENDER",
+      "precio": 530.22,
+      "rsi": 65.5,
+      "cash_antes": 84400,
+      "motivo": "RSI 65.5 sobrecompra -> VENDER posici\u00f3n"
+    },
+    {
+      "fecha": "2026-10-07T20:30:00",
+      "simbolo": "SPY",
+      "lado": "VENDER",
+      "precio": 505.1,
+      "rsi": 69.0,
+      "cash_antes": 84900,
+      "motivo": "RSI 69.0 sobrecompra -> VENDER"
+    },
+    {
+      "fecha": "2026-10-07T20:35:00",
+      "simbolo": "ETH-USD",
+      "lado": "COMPRAR",
+      "precio": 2577.1,
+      "rsi": 32.4,
+      "cash_antes": 85000,
+      "motivo": "RSI 32.4 sobreventa -> COMPRAR"
+    },
+    {
+      "fecha": "2026-10-07T20:40:00",
+      "simbolo": "BTC-USD",
+      "lado": "COMPRAR",
+      "precio": 83187,
+      "rsi": 43.2,
+      "cash_antes": 82400,
+      "motivo": "RSI 43.2 NEUTRAL -> HOLD pero compra dip"
+    }
+  ],
+  "inicio": "2026-10-07T21:47:44.686225-05:00",
+  "equity_historico": [
+    {
+      "fecha": "2026-10-07T21:47:44.686248-05:00",
+      "equity": 100208.19,
+      "cash": 85076.83
+    },
+    {
+      "fecha": "2026-10-07T21:47:44.880382-05:00",
+      "equity": 100208.71,
+      "cash": 85076.83
+    }
+  ]
+}
