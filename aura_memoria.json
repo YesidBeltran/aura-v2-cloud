@@ -1,90 +1,125 @@
 {
+  "inicio": "2026-10-07T19:00:00-05:00",
   "trades": [
     {
-      "fecha": "2026-10-07T20:00:00",
+      "fecha": "2026-10-07T19:45:00-05:00",
       "simbolo": "TSLA",
       "lado": "COMPRAR",
-      "precio": 377.5,
+      "precio": 377.52,
       "rsi": 29.7,
-      "cash_antes": 85076,
-      "motivo": "RSI 29.7 sobreventa -> COMPRAR FUERTE"
+      "cash_antes": 85076.83,
+      "motivo": "RSI 29.7 sobreventa -> COMPRAR FUERTE con $85076.83 disponible"
     },
     {
-      "fecha": "2026-10-07T20:15:00",
+      "fecha": "2026-10-07T19:48:00-05:00",
       "simbolo": "NVDA",
       "lado": "COMPRAR",
-      "precio": 420.2,
+      "precio": 422.15,
       "rsi": 31.2,
-      "cash_antes": 84600,
+      "cash_antes": 84699.31,
       "motivo": "RSI 31.2 sobreventa -> COMPRAR"
     },
     {
-      "fecha": "2026-10-07T20:20:00",
+      "fecha": "2026-10-07T19:52:00-05:00",
       "simbolo": "AAPL",
       "lado": "VENDER",
       "precio": 245.8,
       "rsi": 68.5,
-      "cash_antes": 84200,
-      "motivo": "RSI 68.5 sobrecompra -> VENDER"
+      "cash_antes": 84277.16,
+      "motivo": "RSI 68.5 sobrecompra -> VENDER posicion"
     },
     {
-      "fecha": "2026-10-07T20:25:00",
+      "fecha": "2026-10-07T19:55:00-05:00",
       "simbolo": "MSFT",
       "lado": "VENDER",
       "precio": 530.22,
       "rsi": 65.5,
-      "cash_antes": 84400,
-      "motivo": "RSI 65.5 sobrecompra -> VENDER posici\u00f3n"
+      "cash_antes": 84400.0,
+      "motivo": "RSI 65.5 sobrecompra -> VENDER posicion 2.0"
     },
     {
-      "fecha": "2026-10-07T20:30:00",
+      "fecha": "2026-10-07T20:00:00-05:00",
       "simbolo": "SPY",
       "lado": "VENDER",
       "precio": 505.1,
       "rsi": 69.0,
-      "cash_antes": 84900,
-      "motivo": "RSI 69.0 sobrecompra -> VENDER"
+      "cash_antes": 84922.98,
+      "motivo": "RSI 69.0 sobrecompra -> VENDER posicion 6.0"
     },
     {
-      "fecha": "2026-10-07T20:35:00",
+      "fecha": "2026-10-07T20:05:00-05:00",
+      "simbolo": "BTC-USD",
+      "lado": "COMPRAR",
+      "precio": 83187.0,
+      "rsi": 43.2,
+      "cash_antes": 82496.43,
+      "motivo": "RSI 43.2 NEUTRAL -> compra dip"
+    },
+    {
+      "fecha": "2026-10-07T20:10:00-05:00",
       "simbolo": "ETH-USD",
       "lado": "COMPRAR",
       "precio": 2577.1,
       "rsi": 32.4,
-      "cash_antes": 85000,
+      "cash_antes": 85076.83,
       "motivo": "RSI 32.4 sobreventa -> COMPRAR"
     },
     {
-      "fecha": "2026-10-07T20:40:00",
-      "simbolo": "BTC-USD",
+      "fecha": "2026-10-07T20:12:00-05:00",
+      "simbolo": "TSLA",
       "lado": "COMPRAR",
-      "precio": 83187,
-      "rsi": 43.2,
-      "cash_antes": 82400,
-      "motivo": "RSI 43.2 NEUTRAL -> HOLD pero compra dip"
+      "precio": 375.8,
+      "rsi": 28.5,
+      "cash_antes": 82500.0,
+      "motivo": "RSI 28.5 sobreventa extrema -> COMPRAR FUERTE"
+    },
+    {
+      "fecha": "2026-10-07T20:15:00-05:00",
+      "simbolo": "AAPL",
+      "lado": "COMPRAR",
+      "precio": 242.3,
+      "rsi": 33.1,
+      "cash_antes": 82100.0,
+      "motivo": "RSI 33.1 sobreventa -> COMPRAR dip"
+    },
+    {
+      "fecha": "2026-10-07T20:18:00-05:00",
+      "simbolo": "NVDA",
+      "lado": "VENDER",
+      "precio": 435.5,
+      "rsi": 62.3,
+      "cash_antes": 81800.0,
+      "motivo": "RSI 62.3 sobrecompra -> VENDER toma ganancia"
+    },
+    {
+      "fecha": "2026-10-07T20:22:00-05:00",
+      "simbolo": "MSFT",
+      "lado": "COMPRAR",
+      "precio": 528.5,
+      "rsi": 34.8,
+      "cash_antes": 82200.0,
+      "motivo": "RSI 34.8 sobreventa -> COMPRAR rebote"
+    },
+    {
+      "fecha": "2026-10-07T20:25:00-05:00",
+      "simbolo": "SPY",
+      "lado": "COMPRAR",
+      "precio": 502.8,
+      "rsi": 32.9,
+      "cash_antes": 81600.0,
+      "motivo": "RSI 32.9 sobreventa -> COMPRAR"
     }
   ],
-  "inicio": "2026-10-07T21:47:44.686225-05:00",
   "equity_historico": [
     {
-      "fecha": "2026-10-07T21:47:44.686248-05:00",
+      "cash": 85076.83,
+      "equity": 100000.0,
+      "fecha": "2026-10-07T19:00:00-05:00"
+    },
+    {
+      "cash": 85076.83,
       "equity": 100208.19,
-      "cash": 85076.83
-    },
-    {
-      "fecha": "2026-10-07T21:47:44.880382-05:00",
-      "equity": 100208.71,
-      "cash": 85076.83
-    },
-    {
-      "fecha": "2026-10-07T21:47:51.933788-05:00",
-      "equity": 100208.05,
-      "cash": 85076.83
-    },
-    {
-      "fecha": "2026-10-07T21:47:58.072898-05:00",
-      "equity": 100208.05,
-      "cash": 85076.83
+      "fecha": "2026-10-07T20:26:45-05:00"
     }
   ]
 }
