@@ -1,0 +1,7 @@
+flask
+gunicorn
+alpaca-trade-api
+ta
+pytz
+pandas
+requests
