@@ -1,6 +1,2 @@
-setuptools
-wheel
-flask
-yfinance
-alpaca-trade-api
-requests
+   flask
+   requests
