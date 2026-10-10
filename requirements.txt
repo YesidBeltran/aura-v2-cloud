@@ -1,7 +1,5 @@
-flask
-gunicorn
-alpaca-trade-api
-ta
-pytz
-pandas
-requests
+Flask==3.1.0
+alpaca-py==0.21.0
+pytz==2024.1
+gunicorn==23.0.0
+pandas==2.2.3
