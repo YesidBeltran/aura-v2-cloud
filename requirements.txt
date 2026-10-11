@@ -3,3 +3,6 @@ alpaca-py==0.21.0
 pytz==2024.1
 gunicorn==23.0.0
 pandas==2.2.3
+gspread==6.1.2
+google-auth==2.35.0
+google-auth-oauthlib==1.2.0
