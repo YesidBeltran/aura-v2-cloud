@@ -627,9 +627,11 @@ def cargar_clientes():
     global trading, data_client
     if not ALPACA_OK:
         estado["status"] = "Error: no se pudo importar alpaca-py"
+        estado["ultimo_error"] = "No se pudo importar alpaca-py: revisa que requirements.txt incluya alpaca-py"
         return False
     if not (API_KEY and API_SECRET):
         estado["status"] = "Esperando keys - configura ALPACA_API_KEY y ALPACA_SECRET_KEY"
+        estado["ultimo_error"] = "Faltan las claves de Alpaca en Render (APCA_API_KEY_ID y APCA_API_SECRET_KEY)"
         return False
     try:
         trading = TradingClient(API_KEY, API_SECRET, paper=IS_PAPER)
@@ -644,6 +646,7 @@ def cargar_clientes():
         trading = data_client = None
         log(f"Error conectando con Alpaca: {e}")
         estado["status"] = "Error de conexión con Alpaca"
+        estado["ultimo_error"] = f"Error de conexión con Alpaca: {type(e).__name__}: {str(e)[:150]}"
         return False
 
 
@@ -661,6 +664,7 @@ def bot_loop():
             log(f"Error en el loop: {e}")
             estado["status"] = "Error temporal (reintentando)"
             registrar_fallo()
+            estado["ultimo_error"] = f"{type(e).__name__}: {str(e)[:150]}"
             pausa_s = 60
         time.sleep(pausa_s)
 
