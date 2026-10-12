@@ -1,7 +1,0 @@
-flask
-gunicorn
-alpaca-py
-pandas
-pytz
-requests
-gspread
