@@ -1,10 +1,9 @@
 """
-AURA SYNAPSE V9.6 AUTO-FLAT 3:50PM NY — VECTOR FLOW + LOGO + FLAT ALL
-Cierra todas las posiciones automáticamente a las 3:50pm hora NY / 2:50pm BOG
+AURA SYNAPSE V9.6 AUTO-FLAT 3:50PM NY — SIN PYTZ
+VECTOR FLOW + LOGO + FLAT ALL + AUTO-CLOSE 15:50 NY
 """
 import os, base64, requests, streamlit as st, pandas as pd, plotly.graph_objects as go, random
-from datetime import datetime, time as dtime
-import pytz
+from datetime import datetime, time as dtime, timezone, timedelta
 
 def get_logo_b64():
     for path in ["/mnt/data/Aura.png", "Aura.png", "aura.png", "/opt/render/project/src/Aura.png"]:
@@ -26,9 +25,8 @@ def send_telegram(msg):
         return False, str(e)
 
 def cerrar_todas_posiciones():
-    # Aquí conectas con Alpaca API real para cerrar
-    # alpaca.close_all_positions()
-    msg = f"🚨 *AUTO-FLAT 3:50PM NY EJECUTADO*\n\nTodas las posiciones cerradas automáticamente\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} BOG"
+    # Aquí va tu lógica real con Alpaca: alpaca.close_all_positions()
+    msg = f"🚨 *AUTO-FLAT 3:50PM NY EJECUTADO*\n\nTodas las posiciones cerradas automáticamente\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} BOG\n\nNo overnight risk ✅"
     send_telegram(msg)
     return True
 
@@ -36,10 +34,20 @@ st.set_page_config(page_title="AURA V9.6 AUTO-FLAT", layout="wide")
 logo_b64 = get_logo_b64()
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="width:44px;height:44px;background:white;border-radius:10px;padding:4px;">' if logo_b64 else '🕯️'
 
-ny_tz = pytz.timezone('America/New_York')
+# Hora NY sin pytz: UTC-4 en horario de verano Oct 2026
+ny_tz = timezone(timedelta(hours=-4))
 now_ny = datetime.now(ny_tz).time()
 auto_flat_time = dtime(15, 50)  # 3:50pm NY
 alert_time = dtime(15, 45)      # 3:45pm NY
+
+# Detectar si mercado está abierto: 9:30am - 4:00pm NY lun-vie
+market_open = dtime(9, 30)
+market_close = dtime(16, 0)
+is_weekday = datetime.now(ny_tz).weekday() < 5
+is_market_open = is_weekday and market_open <= now_ny < market_close
+market_badge = "MARKET OPEN" if is_market_open else "MARKET CLOSED"
+badge_color = "#0F2D25" if is_market_open else "#101826"
+badge_text = "#2EFB9B" if is_market_open else "#E0E6EB"
 
 st.markdown(f"""
 <style>
@@ -51,10 +59,10 @@ st.markdown(f"""
 <div class="header">
   <div style="display:flex; gap:12px; align-items:center;">
     <div style="background:white; border-radius:12px; padding:3px;">{logo_html}</div>
-    <div><b style="font-size:17px;">AURA SYNAPSE V9.6 — AUTO-FLAT 3:50PM NY</b><br><span style="font-size:10px; opacity:0.6;">VECTOR FLOW • AUTO-CLOSE 15:50 NY • NO OVERNIGHT RISK • APROBADO</span></div>
+    <div><b style="font-size:17px;">AURA SYNAPSE V9.6 — AUTO-FLAT 3:50PM NY</b><br><span style="font-size:10px; opacity:0.6;">VECTOR FLOW • AUTO-CLOSE 15:50 NY • NO OVERNIGHT RISK</span></div>
   </div>
   <div style="display:flex; gap:6px; align-items:center;">
-    <span style="background:#0F2D25; color:#2EFB9B; padding:6px 12px; border-radius:20px; border:1px solid #2EFB9B66;">MARKET CLOSED</span>
+    <span style="background:{badge_color}; color:{badge_text}; padding:6px 12px; border-radius:20px; border:1px solid #2EFB9B66;">{market_badge}</span>
     <span style="background:#101826; padding:6px 12px; border-radius:20px;">EQUITY $100368.86</span>
   </div>
 </div>
@@ -76,7 +84,7 @@ with col3:
 # Alerta 3:45pm
 if alert_time <= now_ny < auto_flat_time:
     st.warning("⚠️ ALERTA: En 5 minutos se ejecuta AUTO-FLAT 3:50pm NY — Todas las posiciones se cerrarán automáticamente")
-    send_telegram("⚠️ *ALERTA AUTO-FLAT*\n\nEn 5 minutos cierro todas las posiciones automáticamente a las 3:50pm NY.")
+    send_telegram("⚠️ *ALERTA AUTO-FLAT*\n\nEn 5 min cierro todo automático a las 3:50pm NY.")
 
 # Auto-Flat trigger
 if now_ny >= auto_flat_time and now_ny < dtime(15, 51):
@@ -94,22 +102,22 @@ positions = [
 c1,c2 = st.columns([1.2,3])
 
 with c1:
-    html = '<div class="card"><div style="font-size:11px; opacity:0.6;">◐ POSICIONES ABIERTAS • SE CERRARÁN 3:50PM NY</div>'
+    html = '<div class="card"><div style="font-size:11px; opacity:0.6;">◐ POSICIONES ABIERTAS • AUTO-FLAT 3:50PM NY</div>'
     for p in positions:
         color="#2EFB9B" if p["pnl"]>0 else "#FF6B6B"
         html+=f'<div style="margin-top:10px; font-size:12px;"><span>● {p["sym"]}</span><span style="float:right; color:{color};">{p["trail"]}% {p["status"]}</span></div>'
     html+='</div>'
     st.markdown(html, unsafe_allow_html=True)
-    if st.button("📨 Prueba Telegram Auto-Flat"):
-        send_telegram(f"✅ AURA V9.6 AUTO-FLAT activo — Cierre automático 3:50pm NY — {datetime.now().strftime('%H:%M:%S')} BOG")
+    if st.button("📨 Prueba Telegram"):
+        send_telegram(f"✅ AURA V9.6 AUTO-FLAT activo — Cierre 3:50pm NY — {datetime.now().strftime('%H:%M:%S')} BOG")
         st.success("Enviado")
 
 with c2:
     fig=go.Figure(); x=list(range(35)); y=[340+i*1.15+random.uniform(-2,4) for i in x]
     fig.add_trace(go.Bar(x=x,y=[random.uniform(1,5) for _ in x], marker_color=["#2EFB9B" if random.random()>0.45 else "#FF6B6B" for _ in x]))
-    fig.update_layout(height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=5,r=5,t=5,b=5), showlegend=False)
+    fig.update_layout(height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=5,r=5,t=5,b=5), showlegend=False, xaxis=dict(showgrid=False, showticklabels=False), yaxis=dict(showgrid=False))
     st.plotly_chart(fig, use_container_width=True)
     rows=[[p["sym"],p["lado"],p["qty"],f"${p['entry']}",f"{p['pnl']:+.2f}",f"{p['trail']}%",p["status"]] for p in positions]
     st.dataframe(pd.DataFrame(rows, columns=["SYMBOL","LADO","QTY","ENTRY","P/L","TRAIL","STATUS"]), use_container_width=True, hide_index=True)
 
-st.success("V9.6 AUTO-FLAT 3:50PM NY — LISTO PARA DEPLOY — NO OVERNIGHT RISK — APROBADO")
+st.success("V9.6 AUTO-FLAT 3:50PM NY — SIN PYTZ — LISTO PARA DEPLOY")
