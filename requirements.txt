@@ -1,6 +1,7 @@
-streamlit
-alpaca-py
-requests
-pandas
-tzdata
-streamlit-autorefresh
+   streamlit
+   alpaca-py
+   requests
+   pandas
+   tzdata
+   streamlit-autorefresh
+   gspread
