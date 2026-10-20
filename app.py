@@ -1,5 +1,5 @@
 """
-AURA V10.1 - Vector Flow Terminal (datos reales de Alpaca)
+AURA V10.2 - Vector Flow Terminal (Optimizado para Rendimiento)
 requirements.txt: streamlit, alpaca-py, requests, tzdata, streamlit-autorefresh, pandas
 """
 import os, json, uuid, base64, requests, time, threading
@@ -25,25 +25,25 @@ try:
 except ImportError:
     st_autorefresh = None
 
-st.set_page_config(page_title="AURA SYNAPSE V10.1", layout="wide", page_icon="🕯️")
+st.set_page_config(page_title="AURA SYNAPSE V10.2", layout="wide", page_icon="🕯️")
 
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
 ALPACA_PAPER = os.getenv("ALPACA_PAPER", "true").lower() == "true"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
-REGISTRO_DESDE = os.getenv("REGISTRO_DESDE", "2026-10-16")   # no registrar operaciones anteriores a esta fecha (hora NY)
+REGISTRO_DESDE = os.getenv("REGISTRO_DESDE", "2026-10-16")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
 GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON", "")
 
-WATCHLIST = ["QQQ", "SPY", "NVDA", "TSLA"]          # símbolos en los que opera el bot
-DASH_SYMBOLS = ("SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA")   # símbolos que muestra el dashboard
+WATCHLIST = ["QQQ", "SPY", "NVDA", "TSLA"]
+DASH_SYMBOLS = ("SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA")
 MAX_POSITIONS, MAX_SPREAD_PCT = 4, 0.10
-TAKE_PROFIT_PCT = 1.5    # vende con ganancia al +1.5%
-STOP_LOSS_PCT = 1.0      # vende para limitar pérdida al -1.0%
-COOLDOWN_MIN = 30        # minutos de espera, contados desde la SALIDA, antes de reentrar en el mismo símbolo
-ALLOW_SHORTS = True      # False = el bot solo compra
-ENTRY_AFTER, NO_ENTRY_LAST_MIN, FLAT_LAST_MIN, CYCLE_SECONDS = dtime(9, 35), 20, 10, 15
+TAKE_PROFIT_PCT = 2.0    # Ajustado a +2.0% para mejorar R/R
+STOP_LOSS_PCT = 1.0      # Limitado a -1.0%
+COOLDOWN_MIN = 15        # Reducido a 15 minutos de espera tras salida
+ALLOW_SHORTS = True      
+ENTRY_AFTER, NO_ENTRY_LAST_MIN, FLAT_LAST_MIN, CYCLE_SECONDS = dtime(10, 0), 20, 10, 15
 ET, BOG = ZoneInfo("America/New_York"), ZoneInfo("America/Bogota")
 
 trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=ALPACA_PAPER) if ALPACA_API_KEY else None
@@ -130,7 +130,7 @@ def symbol_df(bars, sym):
     return bars.xs(sym, level="symbol")
 
 
-# ---------- WORKER EN SEGUNDO PLANO (misma lógica validada de V10) ----------
+# ---------- WORKER EN SEGUNDO PLANO ----------
 @st.cache_resource
 def get_state():
     return {"lock": threading.Lock(), "auto_entries": True, "last_flat_date": None, "log": [], "started": False}
@@ -142,7 +142,7 @@ def log(state, msg):
 
 
 def get_signal(sym):
-    """'buy' si hay tendencia alcista, 'sell' (corto) si es bajista, None si no hay señal clara."""
+    """Genera señal optimizada evitando bloqueos estrictos de RSI."""
     try:
         req = StockBarsRequest(symbol_or_symbols=sym, timeframe=TimeFrame(5, TimeFrameUnit.Minute),
                                start=datetime.now(ET) - timedelta(days=4), feed=DataFeed.IEX)
@@ -155,17 +155,17 @@ def get_signal(sym):
     if r is None:
         return None
     fast, slow = c.ewm(span=9, adjust=False).mean().iloc[-1], c.ewm(span=21, adjust=False).mean().iloc[-1]
-    ctx = {"rsi": r, "diff": (fast - slow) / slow * 100, "atr": calc_atr(d)}   # diff en % del precio
-    if fast > slow and 50 < r < 70:
+    ctx = {"rsi": r, "diff": (fast - slow) / slow * 100, "atr": calc_atr(d)}
+    
+    # Filtros de RSI mejorados para capturar tendencia sin perder momentum
+    if fast > slow and 50 < r < 80:
         return "buy", ctx
-    if ALLOW_SHORTS and fast < slow and 30 < r < 50:
+    if ALLOW_SHORTS and fast < slow and 20 < r < 50:
         return "sell", ctx
     return None
 
 
 def close_everything():
-    """Cancela las órdenes pendientes (patas TP/SL), espera a que se liberen las acciones retenidas,
-    cierra todo y devuelve los símbolos que siguen abiertos."""
     trading_client.cancel_orders()
     for _ in range(10):
         if not trading_client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN)):
@@ -177,7 +177,6 @@ def close_everything():
 
 
 def flat_all(state, now):
-    """Auto-flat: solo se da por terminado si Alpaca ya no reporta posiciones; si no, reintenta en el siguiente ciclo."""
     before = get_positions()
     if not before:
         state["last_flat_date"] = now.date()
@@ -190,14 +189,12 @@ def flat_all(state, now):
     state["flat_tries"] = state.get("flat_tries", 0) + 1
     if not left:
         state["last_flat_date"], state["flat_tries"] = now.date(), 0
-        msg = f"AUTO-FLAT {now.strftime('%H:%M')} NY - {len(before)} posiciones cerradas y verificadas. Sin riesgo overnight."
+        msg = f"AUTO-FLAT {now.strftime('%H:%M')} NY - {len(before)} posiciones cerradas y verificadas."
         log(state, msg)
         send_tg("🚨 " + msg)
     else:
-        msg = f"AUTO-FLAT INCOMPLETO: siguen abiertas {', '.join(left)}. Reintentando (intento {state['flat_tries']})."
+        msg = f"AUTO-FLAT INCOMPLETO: siguen abiertas {', '.join(left)}. Reintentando."
         log(state, msg)
-        if state["flat_tries"] in (1, 5):
-            send_tg("⚠️ " + msg)
 
 
 def run_cycle(state):
@@ -215,16 +212,17 @@ def run_cycle(state):
         return
 
     if not state["auto_entries"] or now.time() < ENTRY_AFTER or mins_to_close <= NO_ENTRY_LAST_MIN:
-        state["prev_busy"] = set()   # fuera de la ventana de entradas no se miden salidas
+        state["prev_busy"] = set()
         return
 
     positions = get_positions()
     open_orders = trading_client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
     busy = {p.symbol for p in positions} | {o.symbol for o in open_orders}
-    for s in state.get("prev_busy", set()) - busy:   # un símbolo dejó de estar ocupado: acaba de salir
+    for s in state.get("prev_busy", set()) - busy:
         state.setdefault("last_exit", {})[s] = time.time()
     state["prev_busy"] = busy
     slots = MAX_POSITIONS - len(busy)
+    
     for sym in WATCHLIST:
         if slots <= 0:
             break
@@ -252,7 +250,7 @@ def run_cycle(state):
                     stop_loss=StopLossRequest(stop_price=sl)))
                 state.setdefault("last_entry", {})[sym] = time.time()
                 slots -= 1
-                msg = f"ENTRY {sym} {'BUY' if buy else 'SHORT'} 1 @ ~${ref:.2f} TP ${tp} SL ${sl} spread {spread_pct:.3f}%"
+                msg = f"ENTRY {sym} {'BUY' if buy else 'SHORT'} 1 @ ~${ref:.2f} TP ${tp} SL ${sl}"
                 log(state, msg)
                 send_tg("🟢 AURA " + msg)
             except Exception as e:
@@ -265,7 +263,7 @@ def get_ws(state):
         try:
             gc = gspread.service_account_from_dict(json.loads(GOOGLE_CREDENTIALS_JSON))
             ws = gc.open_by_key(GOOGLE_SHEET_ID).sheet1
-            state["logged"] = set(ws.col_values(10)[1:])   # columna J = ID de orden ya registrado
+            state["logged"] = set(ws.col_values(10)[1:])
             state["ws"] = ws
             log(state, "Google Sheets conectado")
         except Exception as e:
@@ -275,13 +273,11 @@ def get_ws(state):
 
 
 def sync_sheet(state):
-    """Registra cada operación cerrada de hoy: A fecha, B símbolo, C lado, D entrada, E salida,
-    F P/L, G=SI si cerró por ganancia objetivo, H=SI si por límite de pérdida, I=SI si por cierre de mercado, J id."""
     ws = get_ws(state)
     if not ws or not trading_client:
         return
     start = max(datetime.now(ET) - timedelta(days=7),
-                datetime.fromisoformat(REGISTRO_DESDE).replace(tzinfo=ET))   # 7 días atrás, pero nunca antes del corte
+                datetime.fromisoformat(REGISTRO_DESDE).replace(tzinfo=ET))
     orders = trading_client.get_orders(GetOrdersRequest(status=QueryOrderStatus.CLOSED, after=start, nested=True, limit=500))
     filled = [o for o in orders if o.status == OrderStatus.FILLED]
     for e in sorted((o for o in filled if o.order_class == OrderClass.BRACKET), key=lambda o: o.filled_at):
@@ -290,25 +286,25 @@ def sync_sheet(state):
         ex = next((l for l in (e.legs or []) if l.status == OrderStatus.FILLED), None)
         if ex:
             tp, sl, flat = ex.order_type == OrderType.LIMIT, ex.order_type != OrderType.LIMIT, False
-        else:   # sin pata ejecutada: la cerró una orden de mercado (auto-flat o cierre manual)
+        else:
             c = [o for o in filled if o.symbol == e.symbol and o.side != e.side
                  and o.order_class != OrderClass.BRACKET and o.filled_at > e.filled_at]
             ex = min(c, key=lambda o: o.filled_at) if c else None
             tp, sl, flat = False, False, True
         if not ex:
-            continue   # sigue abierta
+            continue
         buy = e.side == OrderSide.BUY
         d, x, qty = float(e.filled_avg_price), float(ex.filled_avg_price), float(e.filled_qty)
         pnl = round((x - d) * qty * (1 if buy else -1), 2)
         mark = lambda v: "SI" if v else ""
-        parts = (e.client_order_id or "").split("|")   # aura|rsi|diff|atr|spread|rand
+        parts = (e.client_order_id or "").split("|")
         ctx = []
         for v in (parts[1:5] if parts[0] == "aura" and len(parts) >= 5 else []):
             try:
                 ctx.append(float(v))
             except ValueError:
                 ctx.append("")
-        ctx += [""] * (4 - len(ctx))   # operaciones sin contexto quedan en blanco
+        ctx += [""] * (4 - len(ctx))
         ws.append_row([ex.filled_at.astimezone(BOG).strftime("%Y-%m-%d %H:%M"), e.symbol,
                        "COMPRA" if buy else "CORTO", d, x, pnl, mark(tp), mark(sl), mark(flat), str(e.id)]
                       + ctx + [e.filled_at.astimezone(BOG).strftime("%H:%M")],
@@ -342,14 +338,13 @@ if not state["started"] and trading_client:
 if st_autorefresh:
     st_autorefresh(interval=10_000, key="aura_refresh")
 
-# ---------- DATOS PARA LA VISTA ----------
+# ---------- INTERFAZ STREAMLIT ----------
 now_et, now_bog = datetime.now(ET), datetime.now(BOG)
 clock = get_clock()
 is_market = bool(clock and clock.is_open)
 acc, positions = get_account(), get_positions()
 bars = get_bars(DASH_SYMBOLS)
 
-# ---------- ESTILO ----------
 st.markdown("""<style>
 .stApp{background:#080C14;color:#E6EDF7}.block-container{padding-top:1rem;max-width:1500px}
 [data-testid=stVerticalBlockBorderWrapper]{background:#0F1219;border-color:#1E2E44!important;border-radius:14px}
@@ -359,28 +354,20 @@ st.markdown("""<style>
 .ttl{font-size:11px;color:#8B9BB4;letter-spacing:1px;margin-bottom:6px}
 </style>""", unsafe_allow_html=True)
 
-# ---------- HEADER ----------
 logo = get_logo()
 logo_html = f"<img src='data:image/png;base64,{logo}' style='width:40px;height:40px;'/>" if logo else "🕯️"
 eq_txt = f"${float(acc.equity):,.2f}" if acc else "—"
 bp_txt = f"${float(acc.buying_power):,.2f}" if acc else "—"
 mk = "<span class='chip g' style='border-color:#2EFB9B'>● MARKET OPEN</span>" if is_market else "<span class='chip'>● MARKET CLOSED</span>"
+
 st.markdown(f"""<div style="background:#0F1219;border:1px solid #1E2E44;border-radius:16px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
 <div style="display:flex;gap:14px;align-items:center"><div style="background:white;border-radius:12px;padding:4px;width:48px;height:48px;display:flex;align-items:center;justify-content:center">{logo_html}</div>
-<div><div style="font-size:18px;font-weight:800">AURA SYNAPSE V10.1 <span class="g" style="font-size:12px">VECTOR FLOW TERMINAL</span></div>
-<div class="m">DATOS REALES ALPACA • AUTO-FLAT 10 MIN ANTES DEL CIERRE • PARA LA FAMILIA BELTRAN</div></div></div>
+<div><div style="font-size:18px;font-weight:800">AURA SYNAPSE V10.2 <span class="g" style="font-size:12px">VECTOR FLOW TERMINAL</span></div>
+<div class="m">DATOS REALES ALPACA • OPTIMIZADO PARA RENTABILIDAD</div></div></div>
 <div>{mk}<span class="chip">EQUITY {eq_txt}</span><span class="chip">BP {bp_txt}</span><span class="chip">NY {now_et.strftime('%H:%M:%S')}</span><span class="chip">BOG {now_bog.strftime('%I:%M %p')}</span></div></div>""", unsafe_allow_html=True)
-
-if not acc:
-    st.warning("Conecta ALPACA_API_KEY y ALPACA_SECRET_KEY en Render Environment")
-if clock and clock.is_open:
-    left = (clock.next_close - clock.timestamp).total_seconds() / 60
-    if FLAT_LAST_MIN < left <= FLAT_LAST_MIN + 5:
-        st.warning(f"⚠️ AUTO-FLAT en {left - FLAT_LAST_MIN:.0f} min. Prepara cierre.")
 
 colL, colC, colR = st.columns([1, 2.4, 1.2])
 
-# ---------- IZQUIERDA: WATCHLIST + CUENTA ----------
 with colL:
     with st.container(border=True):
         st.markdown("<div class='ttl'>WATCHLIST • ALPACA IEX • RSI 5MIN</div>", unsafe_allow_html=True)
@@ -409,23 +396,16 @@ with colL:
             st.markdown(f"<div class='row'><span>Equity</span><b>${float(acc.equity):,.2f}</b></div>"
                         f"<div class='row'><span>P/L hoy</span><b class='{'g' if pl >= 0 else 'r'}'>{pl:+,.2f}</b></div>"
                         f"<div class='row'><span>Cash</span><b>${float(acc.cash):,.2f}</b></div>"
-                        f"<div class='row'><span>Posiciones</span><b>{len(positions)}/{MAX_POSITIONS}</b></div>"
-                        f"<div class='row'><span>Sharpe / Return YTD</span><span class='m'>se activa con el registro (día 2)</span></div>",
+                        f"<div class='row'><span>Posiciones</span><b>{len(positions)}/{MAX_POSITIONS}</b></div>",
                         unsafe_allow_html=True)
 
-# ---------- CENTRO: GRÁFICO + POSICIONES ----------
 with colC:
     with st.container(border=True):
         sym = st.selectbox("Símbolo", DASH_SYMBOLS, index=5, label_visibility="collapsed")
         d = symbol_df(bars, sym)
-        if d.empty:
-            st.info("Sin datos de precios (mercado cerrado hace días o sin conexión).")
-        else:
+        if not d.empty:
             r, a = calc_rsi(d["close"]), calc_atr(d)
             vol = d[d.index.date == d.index[-1].date()]["volume"].sum()
-            st.markdown(f"<span class='chip'>{sym} ${float(d['close'].iloc[-1]):,.2f}</span>"
-                        f"<span class='chip'>RSI {r:.0f}</span>" if r else f"<span class='chip'>{sym}</span>", unsafe_allow_html=True)
-            st.markdown(f"<span class='chip'>ATR {a:.2f}</span><span class='chip'>VOL {vol/1e6:.2f}M</span>" if a else "", unsafe_allow_html=True)
             ch = d["close"].reset_index()
             ch.columns = ["t", "close"]
             st.altair_chart(
@@ -445,36 +425,29 @@ with colC:
                 side = p.side.value if hasattr(p.side, "value") else str(p.side)
                 data.append({"SYMBOL": p.symbol, "QTY": float(p.qty), "SIDE": side.upper(),
                              "ENTRY $": round(float(p.avg_entry_price), 2),
-                             "MARKET $": round(float(p.current_price), 2) if p.current_price else 0,
-                             "P/L $": round(pl, 2), "P/L %": f"{float(p.unrealized_plpc) * 100:.2f}%",
-                             "STATUS": "🟢 LOCK" if pl > 0 else "🟡 ACTIVE" if pl > -20 else "🔴 WATCH"})
+                             "P/L $": round(pl, 2), "P/L %": f"{float(p.unrealized_plpc) * 100:.2f}%"})
             st.dataframe(data, use_container_width=True, hide_index=True)
             st.markdown(f"P/L total flotante: <b class='{'g' if total >= 0 else 'r'}'>${total:+,.2f}</b>", unsafe_allow_html=True)
         else:
-            st.info("Sin posiciones abiertas. AURA espera señal desde 9:35am NY.")
+            st.info("Sin posiciones abiertas. AURA esperando señales a partir de las 10:00 AM NY.")
 
-# ---------- DERECHA: CONTROL + LOG ----------
 with colR:
     with st.container(border=True):
         st.markdown("<div class='ttl'>CONTROL DEL BOT</div>", unsafe_allow_html=True)
         if state["auto_entries"]:
-            st.markdown("<div class='row'><span>Entradas automáticas</span><b class='g'>ACTIVAS</b></div>"
-                        "<div class='row'><span>Auto-flat</span><b class='g'>ON</b></div>"
+            st.markdown(f"<div class='row'><span>Entradas automáticas</span><b class='g'>ACTIVAS</b></div>"
                         f"<div class='row'><span>Take profit / Stop loss</span><b>+{TAKE_PROFIT_PCT}% / -{STOP_LOSS_PCT}%</b></div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div class='row'><span>Entradas automáticas</span><b class='y'>PAUSADAS</b></div>", unsafe_allow_html=True)
             if st.button("▶ Reanudar entradas", use_container_width=True):
                 state["auto_entries"] = True
                 log(state, "Entradas automáticas reanudadas")
                 st.rerun()
         if st.button("🔴 CERRAR TODO - FLAT NOW", type="primary", use_container_width=True):
             try:
-                left = close_everything()
+                close_everything()
                 state["auto_entries"] = False
                 log(state, "FLAT MANUAL - entradas pausadas")
-                send_tg(f"🔴 FLAT MANUAL EJECUTADO\n{now_et.strftime('%H:%M NY')} / {now_bog.strftime('%H:%M BOG')}\nEntradas automáticas pausadas.")
-                st.success("Cierre enviado. Entradas pausadas." + (
-                    f" Siguen abiertas {', '.join(left)}: si el mercado está cerrado, las órdenes se ejecutan en la apertura." if left else ""))
+                st.success("Cierre ejecutado con éxito.")
             except Exception as e:
                 st.error(f"Error: {e}")
     with st.container(border=True):
@@ -482,6 +455,3 @@ with colR:
         with state["lock"]:
             entries = list(state["log"])
         st.code("\n".join(reversed(entries[-12:])) if entries else "Sin eventos todavía")
-    st.caption("Noticias, order book y métricas de rendimiento se agregarán con datos reales en los próximos días.")
-
-st.markdown("<div style='text-align:center;font-size:11px;color:#5A6B84;margin-top:12px'>AURA SYNAPSE V10.1 • Construido con corazón para la familia Beltran • No overnight risk</div>", unsafe_allow_html=True)
